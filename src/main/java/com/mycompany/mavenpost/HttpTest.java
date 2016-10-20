@@ -4,10 +4,13 @@
  * and open the template in the editor.
  */
 package com.mycompany.mavenpost;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
@@ -16,7 +19,10 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONObject;
+import com.google.gson.*;
+import org.apache.http.Header;
 
 /**
  *
@@ -33,15 +39,31 @@ HttpPost httppost = new HttpPost("https://app.monsum.com/api/1.0/api.php");
 
 // Request parameters and other properties.
 String auth = DEFAULT_USER + ":" + DEFAULT_PASS;
-byte[] encodedAuth = Base64.encodeBase64(auth.getBytes(Charset.forName("ISO-8859-1")));
+byte[] encodedAuth = Base64.encodeBase64(auth.getBytes());
 String authHeader = "Basic " + new String(encodedAuth);
-httppost.setHeader(HttpHeaders.AUTHORIZATION, auth);
+//String authHeader = "Basic " +"YW5kcmVhcy5zZWZpY2hhQG1hcmtldHBsYWNlLWFuYWx5dGljcy5kZTo5MGRkYjg3NjExMWRiNjNmZDQ1YzUyMjdlNTNmZGIyYlhtMUJQQm03OHhDS1FUVm1OR1oxMHY5TVVyZkhWV3Vh";
+
+httppost.setHeader(HttpHeaders.AUTHORIZATION, authHeader);
 
 
 httppost.setHeader(HttpHeaders.CONTENT_TYPE,"Content-Type: application/json");
+
+Map<String, Object> params = new LinkedHashMap<>();
+                params.put("SERVICE", "customer.get");
+                
+
 JSONObject json = new JSONObject();
 json.put("SERVICE", "customer.get");
-json.put("FILTER","");
+
+//Map<String, Object> params2 = new LinkedHashMap<>();
+
+//params2.put("CUSTOMER_NUMBER","5");
+ JSONObject array= new JSONObject();
+ array.put("CUSTOMER_NUMBER","2");
+
+json.put("FILTER",array);
+
+
 StringEntity param = new StringEntity(json.toString());
 httppost.setEntity(param);
 
@@ -49,19 +71,40 @@ HttpClient client = HttpClientBuilder.create().build();
 HttpResponse response = client.execute(httppost);
  
 int statusCode = response.getStatusLine().getStatusCode();
-System.out.println("The status code is" + statusCode);
+System.out.println("The status code is  " + statusCode);
 
 //Execute and get the response.
 HttpEntity entity = response.getEntity();
 
-if (entity != null) {
-    InputStream instream = entity.getContent();
-    try {
-        // do something useful
-    } finally {
-        instream.close();
-    }
+Header[] headers = response.getAllHeaders();
+for (Header header : headers) {
+	System.out.println("Key : " + header.getName()
+	      + " ,Value : " + header.getValue());
 }
+ if (entity != null) {
+           String retSrc = EntityUtils.toString(entity); 
+           // parsing JSON
+           //JSONObject result = new JSONObject(retSrc);
+           Gson gson = new GsonBuilder().setPrettyPrinting().create();
+JsonParser jp = new JsonParser();
+JsonElement je = jp.parse(retSrc);
+String prettyJsonString = gson.toJson(je);
+System.out.println(prettyJsonString);
+ }
+//if (entity != null) {
+//    InputStream instream = entity.getContent();
+//    try {
+//  final BufferedReader reader = new BufferedReader(
+//                    new InputStreamReader(instream));
+//            String line = null;
+//            while ((line = reader.readLine()) != null) {
+//                System.out.println(line);
+//            }
+//            reader.close();
+//    } finally {
+//        instream.close();
+//    }
+//}
 }
 }
 
